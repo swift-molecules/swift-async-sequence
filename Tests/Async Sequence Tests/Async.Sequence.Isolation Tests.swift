@@ -25,7 +25,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
             .compactMap { $0 > 10 ? $0 : nil }
 
         #expect(
-            pipeline is Async.CompactMap<Async.Map<Async.Filter<Produce<Int>>, Int>, Int>
+            type(of: pipeline) == Async.CompactMap<Async.Map<Async.Filter<Produce<Int>>, Int>, Int>.self
         )
 
         var results: [Int] = []
@@ -46,7 +46,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
             .flatMap { Produce([$0, $0 + 1]) }
 
         #expect(
-            pipeline is Async.FlatMap<Async.Map<Produce<Int>, Int>, Produce<Int>>
+            type(of: pipeline) == Async.FlatMap<Async.Map<Produce<Int>, Int>, Produce<Int>>.self
         )
 
         var results: [Int] = []
@@ -116,7 +116,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         nonisolated(unsafe) var allOnMain = true
 
         let mapped = source.map { value -> Int in
-            if currentThreadID() != mainThreadID { allOnMain = false }
+            if currentThreadID() != mainThreadID { unsafe allOnMain = false }
             return value * 2
         }
 
@@ -126,7 +126,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [2, 4, 6])
-        #expect(allOnMain, "sync map closure should run on MainActor")
+        unsafe #expect(allOnMain, "sync map closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -136,7 +136,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         nonisolated(unsafe) var allOnMain = true
 
         let filtered = source.filter { value -> Bool in
-            if currentThreadID() != mainThreadID { allOnMain = false }
+            if currentThreadID() != mainThreadID { unsafe allOnMain = false }
             return value > 3
         }
 
@@ -146,7 +146,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [4, 5])
-        #expect(allOnMain, "sync filter closure should run on MainActor")
+        unsafe #expect(allOnMain, "sync filter closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -156,7 +156,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         nonisolated(unsafe) var allOnMain = true
 
         let compacted = source.compactMap { value -> Int? in
-            if currentThreadID() != mainThreadID { allOnMain = false }
+            if currentThreadID() != mainThreadID { unsafe allOnMain = false }
             return Int(value)
         }
 
@@ -166,7 +166,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [1, 3, 5])
-        #expect(allOnMain, "sync compactMap closure should run on MainActor")
+        unsafe #expect(allOnMain, "sync compactMap closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -176,7 +176,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         nonisolated(unsafe) var allOnMain = true
 
         let flat = source.flatMap { value -> Produce<Int> in
-            if currentThreadID() != mainThreadID { allOnMain = false }
+            if currentThreadID() != mainThreadID { unsafe allOnMain = false }
             return Produce([value, value * 10])
         }
 
@@ -186,7 +186,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [1, 10, 2, 20, 3, 30])
-        #expect(allOnMain, "sync flatMap closure should run on MainActor")
+        unsafe #expect(allOnMain, "sync flatMap closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -199,11 +199,11 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         let pipeline =
             source
             .map { value -> Int in
-                if currentThreadID() != mainThreadID { mapOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe mapOnMain = false }
                 return value * 2
             }
             .filter { value -> Bool in
-                if currentThreadID() != mainThreadID { filterOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe filterOnMain = false }
                 return value > 4
             }
 
@@ -213,8 +213,8 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [6, 8, 10])
-        #expect(mapOnMain, "sync map closure should run on MainActor")
-        #expect(filterOnMain, "sync filter closure should run on MainActor")
+        unsafe #expect(mapOnMain, "sync map closure should run on MainActor")
+        unsafe #expect(filterOnMain, "sync filter closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -229,19 +229,19 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         let pipeline =
             source
             .filter { value -> Bool in
-                if currentThreadID() != mainThreadID { filterOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe filterOnMain = false }
                 return value % 2 == 0
             }
             .map { value -> Int in
-                if currentThreadID() != mainThreadID { mapOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe mapOnMain = false }
                 return value * 10
             }
             .compactMap { value -> Int? in
-                if currentThreadID() != mainThreadID { compactMapOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe compactMapOnMain = false }
                 return value > 20 ? value : nil
             }
             .flatMap { value -> Produce<Int> in
-                if currentThreadID() != mainThreadID { flatMapOnMain = false }
+                if currentThreadID() != mainThreadID { unsafe flatMapOnMain = false }
                 return Produce([value, value + 1])
             }
 
@@ -251,10 +251,10 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [40, 41, 60, 61])
-        #expect(filterOnMain, "filter closure should run on MainActor")
-        #expect(mapOnMain, "map closure should run on MainActor")
-        #expect(compactMapOnMain, "compactMap closure should run on MainActor")
-        #expect(flatMapOnMain, "flatMap closure should run on MainActor")
+        unsafe #expect(filterOnMain, "filter closure should run on MainActor")
+        unsafe #expect(mapOnMain, "map closure should run on MainActor")
+        unsafe #expect(compactMapOnMain, "compactMap closure should run on MainActor")
+        unsafe #expect(flatMapOnMain, "flatMap closure should run on MainActor")
     }
 
     @Test @MainActor
@@ -264,7 +264,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         nonisolated(unsafe) var allOnMain = true
 
         let mapped: AsyncMapSequence<Produce<Int>, Int> = source.map { value -> Int in
-            if currentThreadID() != mainThreadID { allOnMain = false }
+            if currentThreadID() != mainThreadID { unsafe allOnMain = false }
             return value * 2
         }
 
@@ -274,7 +274,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
         }
 
         #expect(results == [2, 4, 6])
-        #expect(
+        unsafe #expect(
             !allOnMain,
             "stdlib map closure should NOT run on MainActor — this is the bug we fix"
         )
@@ -283,7 +283,7 @@ struct `Async sequence operators preserve concrete types and caller isolation` {
 
 private func currentThreadID() -> UInt {
     #if canImport(Darwin)
-        UInt(pthread_mach_thread_np(pthread_self()))
+        unsafe UInt(pthread_mach_thread_np(pthread_self()))
     #elseif os(Windows)
 
         UInt(GetCurrentThreadId())

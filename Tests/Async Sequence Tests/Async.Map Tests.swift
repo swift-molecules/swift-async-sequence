@@ -69,7 +69,7 @@ struct `Async maps transform values while preserving caller isolation` {
         let source = Produce([1, 2, 3])
         let mapped = source.map { $0 * 2 }
 
-        #expect(mapped is Async.Map<Produce<Int>, Int>)
+        #expect(type(of: mapped) == Async.Map<Produce<Int>, Int>.self)
     }
 
 }

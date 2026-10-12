@@ -83,7 +83,7 @@ struct `Async compact maps preserve transformed values and caller isolation` {
         let source = Produce(["1", "two", "3"])
         let compacted = source.compactMap { Int($0) }
 
-        #expect(compacted is Async.CompactMap<Produce<String>, Int>)
+        #expect(type(of: compacted) == Async.CompactMap<Produce<String>, Int>.self)
     }
 
 }

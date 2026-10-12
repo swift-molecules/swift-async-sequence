@@ -91,7 +91,7 @@ struct `Async flat maps preserve segment order and caller isolation` {
         let source = Produce([1, 2, 3])
         let flat = source.flatMap { Produce([$0]) }
 
-        #expect(flat is Async.FlatMap<Produce<Int>, Produce<Int>>)
+        #expect(type(of: flat) == Async.FlatMap<Produce<Int>, Produce<Int>>.self)
     }
 
 }

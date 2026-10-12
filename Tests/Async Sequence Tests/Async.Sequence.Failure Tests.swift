@@ -78,7 +78,7 @@ struct `Async sequence operators preserve their nonthrowing failure behavior` {
 private struct FailingSequence: AsyncSequence {
     typealias Element = Int
 
-    enum Error: Swift.Error {
+    enum Error: Swift::Error {
         case upstream
     }
 
@@ -102,7 +102,9 @@ private struct FailingSequence: AsyncSequence {
             }
         }
     }
+}
 
+extension FailingSequence {
     func makeAsyncIterator() -> Iterator {
         Iterator(steps: steps.makeIterator())
     }

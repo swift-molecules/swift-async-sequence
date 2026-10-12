@@ -80,7 +80,7 @@ struct `Async filters preserve matching values and caller isolation` {
         let source = Produce([1, 2, 3])
         let filtered = source.filter { $0 > 1 }
 
-        #expect(filtered is Async.Filter<Produce<Int>>)
+        #expect(type(of: filtered) == Async.Filter<Produce<Int>>.self)
     }
 
 }
