@@ -1,6 +1,6 @@
-import Async_Stream
-import Async_Sequence
 import Async
+import Async_Sequence
+import Async_Stream
 import Testing
 
 #if canImport(Darwin)

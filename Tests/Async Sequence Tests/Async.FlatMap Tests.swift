@@ -1,5 +1,5 @@
-import Async_Sequence
 import Async
+import Async_Sequence
 import Testing
 
 @Suite
