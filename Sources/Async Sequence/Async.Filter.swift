@@ -1,3 +1,5 @@
+import _Concurrency
+
 extension Async {
 
     public struct Filter<Base: AsyncSequence>: AsyncSequence {

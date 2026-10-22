@@ -1,3 +1,5 @@
+import _Concurrency
+
 extension Async {
 
     public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
