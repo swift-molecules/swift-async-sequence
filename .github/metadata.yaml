@@ -1,0 +1,4 @@
+description: "Concrete asynchronous sequence transformations that preserve caller isolation."
+homepage: "https://swift-institute.org"
+readme:
+  family: E
