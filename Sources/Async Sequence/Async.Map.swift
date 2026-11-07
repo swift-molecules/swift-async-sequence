@@ -1,12 +1,21 @@
 import _Concurrency
 
 extension Async {
+
     public struct Map<Base: AsyncSequence, Output>: AsyncSequence {
+        public typealias Element = Output
+
         @usableFromInline
         let base: Base
 
         @usableFromInline
         let transform: Transform
+
+        @usableFromInline
+        enum Transform {
+            case sync((Base.Element) -> Output)
+            case async((Base.Element) async -> Output)
+        }
 
         @usableFromInline
         init(base: Base, transform: Transform) {
@@ -50,6 +59,7 @@ extension Async {
                 }
             }
         }
+
     }
 }
 
@@ -59,12 +69,3 @@ extension Async.Map {
         Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
     }
 }
-
-extension Async.Map {
-        public typealias Element = Output
-
-        @usableFromInline
-        enum Transform {
-            case sync((Base.Element) -> Output)
-            case async((Base.Element) async -> Output)
-        }}
