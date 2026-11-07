@@ -1,7 +1,10 @@
 import _Concurrency
 
 extension Async {
+
     public struct Filter<Base: AsyncSequence>: AsyncSequence {
+        public typealias Element = Base.Element
+
         @usableFromInline
         let base: Base
 
@@ -9,61 +12,58 @@ extension Async {
         let predicate: Predicate
 
         @usableFromInline
+        enum Predicate {
+            case sync((Base.Element) -> Bool)
+            case async((Base.Element) async -> Bool)
+        }
+
+        @usableFromInline
         init(base: Base, predicate: Predicate) {
             self.base = base
             self.predicate = predicate
         }
-    }
-}
 
-extension Async.Filter {
-    public typealias Element = Base.Element
+        public struct Iterator: AsyncIteratorProtocol {
+            @usableFromInline
+            var baseIterator: Base.AsyncIterator
 
-    @usableFromInline
-    enum Predicate {
-        case sync((Base.Element) -> Bool)
-        case async((Base.Element) async -> Bool)
-    }
+            @usableFromInline
+            let predicate: Predicate
 
-    public struct Iterator: AsyncIteratorProtocol {
-        @usableFromInline
-        var baseIterator: Base.AsyncIterator
+            @usableFromInline
+            init(
+                baseIterator: Base.AsyncIterator,
+                predicate: Predicate
+            ) {
+                self.baseIterator = baseIterator
+                self.predicate = predicate
+            }
 
-        @usableFromInline
-        let predicate: Predicate
+            @inlinable
+            public mutating func next(
 
-        @usableFromInline
-        init(
-            baseIterator: Base.AsyncIterator,
-            predicate: Predicate
-        ) {
-            self.baseIterator = baseIterator
-            self.predicate = predicate
-        }
-
-        @inlinable
-        public mutating func next(
-
-            isolation actor: isolated (any Actor)? = #isolation
-        ) async -> Base.Element? {
-            while true {
-                let element: Base.Element?
-                do throws(Base.Failure) {
-                    element = try await baseIterator.next(isolation: actor)
-                } catch {
-                    return nil
-                }
-                guard let element else { return nil }
-                let included: Bool
-                switch predicate {
-                case .sync(let f): included = f(element)
-                case .async(let f): included = await f(element)
-                }
-                if included {
-                    return element
+                isolation actor: isolated (any Actor)? = #isolation
+            ) async -> Base.Element? {
+                while true {
+                    let element: Base.Element?
+                    do throws(Base.Failure) {
+                        element = try await baseIterator.next(isolation: actor)
+                    } catch {
+                        return nil
+                    }
+                    guard let element else { return nil }
+                    let included: Bool
+                    switch predicate {
+                    case .sync(let f): included = f(element)
+                    case .async(let f): included = await f(element)
+                    }
+                    if included {
+                        return element
+                    }
                 }
             }
         }
+
     }
 }
 
