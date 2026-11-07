@@ -3,19 +3,12 @@ import _Concurrency
 extension Async {
 
     public struct CompactMap<Base: AsyncSequence, Output>: AsyncSequence {
-        public typealias Element = Output
 
         @usableFromInline
         let base: Base
 
         @usableFromInline
         let transform: Transform
-
-        @usableFromInline
-        enum Transform {
-            case sync((Base.Element) -> Output?)
-            case async((Base.Element) async -> Output?)
-        }
 
         @usableFromInline
         init(base: Base, transform: Transform) {
@@ -71,5 +64,15 @@ extension Async.CompactMap {
     @inlinable
     public func makeAsyncIterator() -> Iterator {
         Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
+    }
+}
+
+extension Async.CompactMap {
+    public typealias Element = Output
+
+    @usableFromInline
+    enum Transform {
+        case sync((Base.Element) -> Output?)
+        case async((Base.Element) async -> Output?)
     }
 }
