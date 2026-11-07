@@ -3,12 +3,19 @@ import _Concurrency
 extension Async {
 
     public struct FlatMap<Base: AsyncSequence, Segment: AsyncSequence>: AsyncSequence {
+        public typealias Element = Segment.Element
 
         @usableFromInline
         let base: Base
 
         @usableFromInline
         let transform: Transform
+
+        @usableFromInline
+        enum Transform {
+            case sync((Base.Element) -> Segment)
+            case async((Base.Element) async -> Segment)
+        }
 
         @usableFromInline
         init(base: Base, transform: Transform) {
@@ -83,15 +90,5 @@ extension Async.FlatMap {
     @inlinable
     public func makeAsyncIterator() -> Iterator {
         Iterator(baseIterator: base.makeAsyncIterator(), transform: transform)
-    }
-}
-
-extension Async.FlatMap {
-    public typealias Element = Segment.Element
-
-    @usableFromInline
-    enum Transform {
-        case sync((Base.Element) -> Segment)
-        case async((Base.Element) async -> Segment)
     }
 }
