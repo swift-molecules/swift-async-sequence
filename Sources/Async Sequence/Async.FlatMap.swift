@@ -27,6 +27,11 @@ extension Async {
             @usableFromInline
             var baseIterator: Base.AsyncIterator
 
+            /// Set once `next` has returned `nil`, so every later call returns `nil`
+            /// without pulling from the base again.
+            @usableFromInline
+            var finished: Bool
+
             @usableFromInline
             let transform: Transform
 
@@ -39,6 +44,7 @@ extension Async {
                 transform: Transform
             ) {
                 self.baseIterator = baseIterator
+                self.finished = false
                 self.transform = transform
                 self.currentIterator = nil
             }
@@ -48,6 +54,7 @@ extension Async {
 
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Segment.Element? {
+                guard !finished else { return nil }
                 while true {
                     if var inner = currentIterator {
                         let element: Segment.Element?
@@ -67,9 +74,11 @@ extension Async {
                     do throws(Base.Failure) {
                         base = try await baseIterator.next(isolation: actor)
                     } catch {
+                        finished = true
                         return nil
                     }
                     guard let base else {
+                        finished = true
                         return nil
                     }
 

@@ -27,6 +27,11 @@ extension Async {
             @usableFromInline
             var baseIterator: Base.AsyncIterator
 
+            /// Set once `next` has returned `nil`, so every later call returns `nil`
+            /// without pulling from the base again.
+            @usableFromInline
+            var finished: Bool
+
             @usableFromInline
             let predicate: Predicate
 
@@ -36,6 +41,7 @@ extension Async {
                 predicate: Predicate
             ) {
                 self.baseIterator = baseIterator
+                self.finished = false
                 self.predicate = predicate
             }
 
@@ -44,14 +50,19 @@ extension Async {
 
                 isolation actor: isolated (any Actor)? = #isolation
             ) async -> Base.Element? {
+                guard !finished else { return nil }
                 while true {
                     let element: Base.Element?
                     do throws(Base.Failure) {
                         element = try await baseIterator.next(isolation: actor)
                     } catch {
+                        finished = true
                         return nil
                     }
-                    guard let element else { return nil }
+                    guard let element else {
+                        finished = true
+                        return nil
+                    }
                     let included: Bool
                     switch predicate {
                     case .sync(let f): included = f(element)

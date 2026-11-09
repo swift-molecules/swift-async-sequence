@@ -77,6 +77,49 @@ extension `Async.Sequence.Failure Tests` {
             #expect(values == [10, 20])
         }
     }
+
+    @Suite
+    struct `Async sequence operators stay finished after a swallowed failure` {
+        @Test
+        func `Map returns nil on every call after the upstream sequence fails`() async {
+            let source = FailingSequence(steps: [.value(1), .failure, .value(3)])
+            var iterator = source.map { $0 * 10 }.makeAsyncIterator()
+
+            #expect(await iterator.next() == 10)
+            #expect(await iterator.next() == nil)
+            #expect(await iterator.next() == nil)
+        }
+
+        @Test
+        func `Filter returns nil on every call after the upstream sequence fails`() async {
+            let source = FailingSequence(steps: [.value(1), .failure, .value(3)])
+            var iterator = source.filter { $0 > 0 }.makeAsyncIterator()
+
+            #expect(await iterator.next() == 1)
+            #expect(await iterator.next() == nil)
+            #expect(await iterator.next() == nil)
+        }
+
+        @Test
+        func `CompactMap returns nil on every call after the upstream sequence fails`() async {
+            let source = FailingSequence(steps: [.value(1), .failure, .value(3)])
+            var iterator = source.compactMap { String($0) }.makeAsyncIterator()
+
+            #expect(await iterator.next() == "1")
+            #expect(await iterator.next() == nil)
+            #expect(await iterator.next() == nil)
+        }
+
+        @Test
+        func `FlatMap returns nil on every call after its outer sequence fails`() async {
+            let source = FailingSequence(steps: [.value(1), .failure, .value(3)])
+            var iterator = source.flatMap { Produce([$0 * 10]) }.makeAsyncIterator()
+
+            #expect(await iterator.next() == 10)
+            #expect(await iterator.next() == nil)
+            #expect(await iterator.next() == nil)
+        }
+    }
 }
 
 private struct FailingSequence: AsyncSequence {
